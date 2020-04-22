@@ -41,6 +41,7 @@ public class atwebInterface {
             ChromeOptions options = new ChromeOptions();
             options.addArguments("start-maximized");
             options.addArguments("incognito");
+            options.setBinary("C:\\Program Files (x86)\\Google\\Chrome Beta\\Application\\chrome.exe");
             this.driver = new ChromeDriver(options);
             this.driver.manage().timeouts().pageLoadTimeout(60, TimeUnit.SECONDS);
         }

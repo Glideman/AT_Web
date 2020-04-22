@@ -1,3 +1,7 @@
+import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.WebElement;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,16 +64,18 @@ public class testUrlJumper extends moduleDefault {
             // время старта теста
             this.startTime = System.currentTimeMillis();
 
-            System.out.println("starting with address " + startingAddress);
+            System.out.println("Starting with address " + startingAddress);
 
             // создание родительского обьекта если подключение к странице возможно
             atwebUrl startingUrl = new atwebUrl(startingAddress);
             this.urlList.add(startingUrl);
 
             // проход по всем страницам в списке страниц
-            for(atwebUrl url : this.urlList) {
-                this.goTo(url);
+            for(int i_url = 0; i_url < this.urlList.size(); i_url++) {
+                this.goTo(this.urlList.get(i_url));
             }
+
+            this.totalTime = System.currentTimeMillis() - this.startTime;
         }
 
         // Письмо на почту
@@ -82,25 +88,103 @@ public class testUrlJumper extends moduleDefault {
     protected void goTo(atwebUrl url) {
         System.out.print("goTo " + url.urlStarting);
 
-        url.connect(true, true);
-        System.out.println(" response " + url.httpResponseCode + " destination " + url.urlDestination);
+        // если коннект не совершался ранее, т.е. не заполнен окончательный адрес, то совершить коннект
+        if(url.urlDestination.isEmpty()) {
+            url.connect(true, true);
+
+            if(url.numRedirects > 0)
+                System.out.println(" response " + url.httpResponseCode + "; destination address is " + url.urlDestination +
+                        " with " + url.numRedirects + " redirects;\n  connection time is " + url.serverTimeAll + "ms (" + url.serverTimeDst + "ms)");
+            else
+                System.out.println(" response " + url.httpResponseCode + "; connection time is " + url.serverTimeAll + "ms");
+        }
 
         atwebPage page = this.pageFindOrCreate(url.urlDestination);
 
         if(page.isDone()) { return; }
 
 
-        //atwebPage startingPage = this.pageFindOrCreate(startingUrl.urlDestination);
-        //startingPage.setUrlOnce(startingUrl);
-        //atwebSite currentSite = startingPage.site;
-        //currentSite.setStartingUrl(startingUrl);
+        //TODO Тут добавить проверку на то, находится ли страница в пределах допустимого для тестирования
 
 
-        //if(!page.isResponseOnly()) { page.setDone(true); return; }
-
-        // child list
+        //if(page.isResponseOnly()) { return; }
 
 
+        //TODO Тут добавить проверку на то, файл ли загружается по ссылке или веб документ
+
+        long clientStartLoading = System.currentTimeMillis();
+
+        // загрузка страницы, подсчет времени
+        try {
+            this.webInterface.GetDriver().get(url.urlDestination);
+        } catch (TimeoutException e) {
+            page.setComment("time out");
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();return;
+        }
+
+        page.clientTime = System.currentTimeMillis() - clientStartLoading;
+
+        System.out.println("content loaded for " + page.clientTime + "ms");
+
+
+        // получение элементов страницы
+        List<WebElement> ele_list_a;
+        try {
+            ele_list_a = this.webInterface.GetDriver().findElements(By.tagName("a"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            page.setDone(false);
+            return;
+        }
+
+
+        // получение ссылок на текущей странице
+        for(WebElement ele_a : ele_list_a) {
+            String ele_href = null;
+            try {
+                ele_href = ele_a.getAttribute("href");
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (e.getMessage().startsWith("chrome not reachable") ||
+                        e.getMessage().startsWith("no such window")) {
+                    page.setDone(false);
+                    return;
+                }
+                continue;
+            }
+
+            // отсееваем невалидные урлы типо телефонов или пустых
+            if(!atwebUrl.isValidUrl(ele_href)) continue;
+
+
+            // поиск урла в глобальном списке урлов
+            atwebUrl global_search_result = null;
+            if(!this.urlList.isEmpty()) for(atwebUrl existingChildUrl : this.urlList) {
+                if(existingChildUrl.urlStarting.equals(ele_href)) global_search_result = existingChildUrl;
+            }
+
+
+            // если урла нет, то создаём объект, добавляем в глобальный список урлов
+            if(global_search_result == null) {
+                atwebUrl newChildUrl = new atwebUrl(ele_href);
+                this.urlList.add(newChildUrl);
+
+                // поиск урла в списке урлов страницы
+                atwebUrl search_result = null;
+                if(!page.getUrlOnPageList().isEmpty()) for(atwebUrl existingChildUrl : page.getUrlOnPageList()) {
+                    if(existingChildUrl.urlStarting.equals(ele_href)) search_result = existingChildUrl;
+                }
+
+                // добавляем на страницу урл, если его там нет
+                if(search_result == null) {page.addUrlOnPage(newChildUrl); }
+            }
+
+        }
+
+        // страница загружена и ссылки получены, значит done!
+        page.setDone(true);
 
     }
 

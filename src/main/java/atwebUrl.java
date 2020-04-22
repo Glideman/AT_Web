@@ -34,7 +34,8 @@ public class atwebUrl {
 
     void connect(boolean redirectEnable, boolean disconnect) {
         //this.urlStarting = url;
-        this.urlDestination = this.urlStarting;
+        //this.urlDestination = this.urlStarting; // назначение устанавливается после коннекта
+        String urlCurrent = this.urlStarting;
 
         long connectionTimeStart = System.currentTimeMillis();
 
@@ -49,7 +50,7 @@ public class atwebUrl {
 
             long connectionTimeDstStart = System.currentTimeMillis();
             try {
-                this.connection = (HttpURLConnection) new URL(this.urlDestination).openConnection();
+                this.connection = (HttpURLConnection) new URL(urlCurrent).openConnection();
                 this.connection.setRequestMethod("HEAD");
                 this.httpResponseCode = this.connection.getResponseCode();
             } catch (UnknownHostException e) {
@@ -72,7 +73,7 @@ public class atwebUrl {
                         this.httpResponseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
                     redirect = true;
                     this.numRedirects++;
-                    this.urlDestination = this.connection.getHeaderField("Location");
+                    urlCurrent = this.connection.getHeaderField("Location");
                     this.connection.disconnect();
                 }
             }
@@ -83,6 +84,8 @@ public class atwebUrl {
         this.serverTimeAll = System.currentTimeMillis() - connectionTimeStart;
 
         if(disconnect) this.connection.disconnect();
+
+        this.urlDestination = urlCurrent;
 
         return;
     }

@@ -8,6 +8,8 @@ public class atwebSite {
 
     protected atwebPage root; // корень сайта
     List<atwebPage> pageList; // корень сайта
+    //protected List <atwebUrl> urlOnSiteList; // урлы на этом сайте (полный список)
+
 
     atwebSite() {
         this.protocol = "";
@@ -17,6 +19,7 @@ public class atwebSite {
         this.root = new atwebPage();
         this.root.site = this;
         this.pageList = new ArrayList<>();
+        //this.urlOnSiteList = new ArrayList<>();
     }
 
 
@@ -30,6 +33,11 @@ public class atwebSite {
     }
 
 
+    //List <atwebUrl> getUrlOnSiteList() {
+    //    return this.urlOnSiteList;
+    //}
+
+
     void setAddress(String a) {
         String[] addressSep = a.split("(:\\/\\/)",2); //   '://'
         this.protocol = addressSep[0];
@@ -41,6 +49,11 @@ public class atwebSite {
     void setStartingUrl(atwebUrl u) {
         this.startingUrl = u;
     }
+
+
+    //void addUrlOnSite(atwebUrl u) {
+    //    this.urlOnSiteList.add(u);
+    //}
 
 
     atwebPage pageFindOrCreate(String url) {
@@ -100,7 +113,11 @@ public class atwebSite {
             currentPage = subPage;
         }
 
-        if(isNewPage) this.pageList.add(currentPage);
+        if(isNewPage) {
+            this.pageList.add(currentPage);
+            System.out.println("; new page");
+        } else {
+            System.out.println("; old page");}
 
         return currentPage;
     }
