@@ -4,17 +4,17 @@ import java.util.List;
 public class atwebSite {
     protected String protocol; // протокол подключения
     protected String name; // имя сайта
-    protected atwebUrl startingUrl;
+    //protected atwebUrl startingUrl;
 
     protected atwebPage root; // корень сайта
-    List<atwebPage> pageList; // корень сайта
+    List<atwebPage> pageList;
     //protected List <atwebUrl> urlOnSiteList; // урлы на этом сайте (полный список)
 
 
     atwebSite() {
         this.protocol = "";
         this.name = "";
-        this.startingUrl = null;
+        //this.startingUrl = null;
 
         this.root = new atwebPage();
         this.root.site = this;
@@ -28,9 +28,9 @@ public class atwebSite {
     }
 
 
-    atwebUrl getStartingUrl() {
-        return startingUrl;
-    }
+    //atwebUrl getStartingUrl() {
+    //    return startingUrl;
+    //}
 
 
     //List <atwebUrl> getUrlOnSiteList() {
@@ -46,9 +46,9 @@ public class atwebSite {
     }
 
 
-    void setStartingUrl(atwebUrl u) {
-        this.startingUrl = u;
-    }
+    //void setStartingUrl(atwebUrl u) {
+    //    this.startingUrl = u;
+    //}
 
 
     //void addUrlOnSite(atwebUrl u) {
@@ -115,13 +115,16 @@ public class atwebSite {
 
         if(isNewPage) {
             this.pageList.add(currentPage);
-            System.out.println("; new page");
+            System.out.println("; new page - " + currentPage.getFullAddress());
         } else {
-            System.out.println("; old page");}
+            System.out.println("; old page - " + currentPage.getFullAddress());}
 
         return currentPage;
     }
 
 
+    void dump() {
+        this.root.dump();
+    }
 
 }

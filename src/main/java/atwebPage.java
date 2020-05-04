@@ -10,6 +10,7 @@ public class atwebPage {
     protected boolean responseOnly; // эта страница была посещена минимум единожды
     protected boolean done; // все тесты на странице были закончены
     protected boolean getParameter; // это не страница - а гет параметр у родительской страницы
+    protected boolean anchor; // это не страница - а якорь. поддержка якорей для страниц, контент которых зависит от якоря
 
     protected List<atwebForm> formList; // список форм на этой странице
     protected List <atwebUrl> urlOnPageList; // урлы на этой странице, которые ведут на различные ресурсы
@@ -28,6 +29,7 @@ public class atwebPage {
         this.responseOnly = true;
         this.done = false;
         this.getParameter = false;
+        this.anchor = false;
 
         this.formList = new ArrayList<>();
         this.urlOnPageList = new ArrayList<>();
@@ -53,6 +55,8 @@ public class atwebPage {
             if(this.parent.getFullAddress().length() > 0) {
                 if(this.getParameter)
                     return this.parent.getFullAddress() + "?" + this.alias;
+                else if(this.anchor)
+                    return this.parent.getFullAddress() + "#" + this.alias;
                 else
                     return this.parent.getFullAddress() + "/" + this.alias;
             }
@@ -77,6 +81,8 @@ public class atwebPage {
             if(this.parent.getPackedAddress().length() > 0) {
                 if(this.getParameter)
                     return this.parent.getPackedAddress() + "?" + index;
+                else if(this.anchor)
+                    return this.parent.getPackedAddress() + "#" + index;
                 else
                     return this.parent.getPackedAddress() + "/" + index;
             }
@@ -153,7 +159,14 @@ public class atwebPage {
 
 
     void setGetParameter(boolean g) {
+        if(g&&this.anchor) this.anchor = false;
         this.getParameter = g;
+    }
+
+
+    void setAnchor(boolean a) {
+        if(a&&this.getParameter) this.getParameter = false;
+        this.anchor = a;
     }
 
 
@@ -197,5 +210,23 @@ public class atwebPage {
 
         return subPage;
     }*/
+
+
+    void dump() {
+        System.out.print("\n" + this.getFullAddress());
+
+        if(this.getUrlToPageList().isEmpty())
+            System.out.println("  url = none");
+        else
+            System.out.println("  url = " + this.getUrlToPageList().get(0).urlStarting);
+
+        for( atwebUrl url : this.getUrlOnPageList()) {
+            System.out.println(" |- " + url.urlStarting + " (" + url.httpFirstResponseCode + ")");
+        }
+
+        for( atwebPage child : this.childList) {
+            child.dump();
+        }
+    }
 
 }

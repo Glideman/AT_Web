@@ -18,6 +18,8 @@ public class atwebUrl {
 
     protected HttpURLConnection connection; // текущее соединение
 
+    protected String contentType; // тип контента
+
 
     atwebUrl(String url) {
         this.page = null;
@@ -29,6 +31,7 @@ public class atwebUrl {
         this.serverTimeAll = 0;
         this.serverTimeDst = 0;
         this.connection = null;
+        this.contentType = "";
     }
 
 
@@ -83,6 +86,8 @@ public class atwebUrl {
 
         this.serverTimeAll = System.currentTimeMillis() - connectionTimeStart;
 
+        this.contentType = this.connection.getContentType();
+
         if(disconnect) this.connection.disconnect();
 
         this.urlDestination = urlCurrent;
@@ -97,7 +102,7 @@ public class atwebUrl {
         if(u == null) return false;
         else if(u.compareTo("") == 0) return false;
         else if(u.contains(":")) {
-            if(!u.startsWith("http") || !u.startsWith("https")) return false;
+            if(!(u.startsWith("https") || u.startsWith("http"))) return false;
         }
 
         return true;
@@ -126,9 +131,10 @@ public class atwebUrl {
         // удаляем слэш в конце, если он есть
         if(pageAddress.endsWith("/")) pageAddress = pageAddress.substring(0, pageAddress.length() - 1);
 
-        if(pageAddress.startsWith("https://")) pageAddress = pageAddress.substring(8);
-        else if(pageAddress.startsWith("http://")) pageAddress = pageAddress.substring(7);
-        String result = "http://" + pageAddress;
+        //if(pageAddress.startsWith("https://")) pageAddress = pageAddress.substring(8);
+        //else if(pageAddress.startsWith("http://")) pageAddress = pageAddress.substring(7);
+        //String result = "http://" + pageAddress;
+        String result = pageAddress;
 
         if( atwebMain.currentInterface.GetProp("using_get_param").equals("true") )
             if(!getParameters.isEmpty())
