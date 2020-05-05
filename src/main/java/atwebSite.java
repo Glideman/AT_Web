@@ -115,9 +115,10 @@ public class atwebSite {
 
         if(isNewPage) {
             this.pageList.add(currentPage);
-            System.out.println("; new page - " + currentPage.getFullAddress());
+            //System.out.println("; new page - " + currentPage.getFullAddress());
         } else {
-            System.out.println("; old page - " + currentPage.getFullAddress());}
+            //System.out.println("; old page - " + currentPage.getFullAddress());
+        }
 
         return currentPage;
     }

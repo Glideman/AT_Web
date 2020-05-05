@@ -2,6 +2,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -88,13 +90,15 @@ public class testUrlJumper extends moduleDefault {
             }
 
             this.totalTime = System.currentTimeMillis() - this.startTime;
+            System.out.println("total time " + this.totalTime);
 
+            this.makeRawReport("raw.report.txt");
         }
 
-        System.out.println("\n\n\nsites dump:");
-        for(atwebSite site : this.siteList) {
-            site.dump();
-        }
+        //System.out.println("\n\n\nsites dump:");
+        //for(atwebSite site : this.siteList) {
+        //    site.dump();
+        //}
 
         // Письмо на почту
 
@@ -111,13 +115,14 @@ public class testUrlJumper extends moduleDefault {
             url.connect(true, true);
 
             if (url.numRedirects > 0)
-                System.out.println(" response " + url.httpResponseCode + "; destination address is " + url.urlDestination +
-                        " with " + url.numRedirects + " redirects;\n  connection time is " + url.serverTimeAll + "ms (" + url.serverTimeDst + "ms); content type = " + url.contentType);
+                System.out.print(" response " + url.httpResponseCode + "; destination address is " + url.urlDestination +
+                        " with " + url.numRedirects + " redirects; connection time is " + url.serverTimeAll + "ms (" + url.serverTimeDst + "ms); content type = " + url.contentType);
             else
-                System.out.println(" response " + url.httpResponseCode + "; connection time is " + url.serverTimeAll + "ms; content type = " + url.contentType);
+                System.out.print(" response " + url.httpResponseCode + "; connection time is " + url.serverTimeAll + "ms; content type = " + url.contentType);
         }
 
         atwebPage page = this.pageFindOrCreate(url.urlDestination);
+        url.page = page;
 
         {// поиск урла в списке урлов, ведущих на эту страницу страницы
             atwebUrl search_result = null;
@@ -140,22 +145,32 @@ public class testUrlJumper extends moduleDefault {
             return null;
 
 
+        // если код ответа != 200, то страница не загружается
+        if(url.httpResponseCode != 200)
+            return null;
+
+
         { // загрузка страницы, подсчет времени
             long clientStartLoading = System.currentTimeMillis();
 
             try {
                 this.webInterface.GetDriver().get(url.urlDestination);
             } catch (TimeoutException e) {
-                page.setComment("time out");
+                page.setDone(false);
+                page.setComment("TimeoutException");
+                System.out.println("\nException caught when loading page [" + url.urlDestination + "]; StackTrace:");
                 return null;
             } catch (Exception e) {
+                page.setDone(false);
+                page.setComment("Exception");
+                System.out.println("\nException caught when loading page [" + url.urlDestination + "]; StackTrace:");
                 e.printStackTrace();
                 return null;
             }
 
             page.clientTime = System.currentTimeMillis() - clientStartLoading;
 
-            System.out.println("content loaded for " + page.clientTime + "ms");
+            System.out.print("; content loaded for " + page.clientTime + "ms");
         }
 
 
@@ -164,8 +179,10 @@ public class testUrlJumper extends moduleDefault {
         try {
             ele_list_a = this.webInterface.GetDriver().findElements(By.tagName("a"));
         } catch (Exception e) {
-            e.printStackTrace();
             page.setDone(false);
+            page.setComment("Exception");
+            System.out.println("\nException caught when getting elements of page [" + url.urlDestination + "]; StackTrace:");
+            e.printStackTrace();
             return null;
         }
 
@@ -173,16 +190,24 @@ public class testUrlJumper extends moduleDefault {
 
 
         // получение ссылок на текущей странице
-        for(WebElement ele_a : ele_list_a) {
+        //for(WebElement ele_a : ele_list_a) {
+        for(int i_ele = 0; i_ele < ele_list_a.size(); i_ele++) {
+            WebElement ele_a = ele_list_a.get(i_ele);
+
             String ele_href = null;
             try {
                 ele_href = ele_a.getAttribute("href");
             } catch (Exception e) {
-                e.printStackTrace();
-                if (e.getMessage().startsWith("chrome not reachable") ||
+                if (    e.getMessage().startsWith("chrome not reachable") ||
                         e.getMessage().startsWith("no such window")) {
                     page.setDone(false);
+                    page.setComment("Exception");
+                    System.out.println("\nException caught when getting href attribute on page [" + url.urlDestination + "]; StackTrace:");
+                    e.printStackTrace();
                     return null;
+                } else {
+                    System.out.println("\nException caught when getting href attribute on page [" + url.urlDestination + "]; StackTrace:");
+                    e.printStackTrace();
                 }
                 continue;
             }
@@ -191,35 +216,60 @@ public class testUrlJumper extends moduleDefault {
             if(!atwebUrl.isValidUrl(ele_href)) continue;
 
 
+            // замена домена (и протокола) из списка заменяемых доменов на домен из стартового адреса
+            // тут именно добавление нового адреса, а не замена, что-бы в отчет сохранилась некорректная ссылка
+            //TODO впереди неоптимизированный кусок кода!
+            String[] domains = atwebMain.currentInterface.GetProp("domains_for_replace").split(";");
+            boolean domain_found = false;
+            String domain_replaced = "";
+            for(String domain : domains) {
+                String[] firstSplit = ele_href.split("(:\\/\\/)", 2);
+                String[] secondSplit = firstSplit[1].split("\\/", 2);
+                if( secondSplit[0].equals(domain) ) {
+                    domain_found = true;
+                    domain_replaced = page.site.getAddress() + "/" + secondSplit[1];
+                }
+            }
+
             //System.out.println(ele_href);
 
-
-            // поиск урла в глобальном списке урлов
-            atwebUrl global_search_result = null;
-            if(!this.urlList.isEmpty()) for(atwebUrl existingChildUrl : this.urlList) {
-                if(existingChildUrl.urlStarting.equals(ele_href)) global_search_result = existingChildUrl;
-            }
-
-            // если урла нет, то создаём объект, добавляем в глобальный список урлов
-            if(global_search_result == null) {
-                global_search_result = new atwebUrl(ele_href);
-                this.urlList.add(global_search_result);
-            }
-
-            // поиск урла в списке урлов страницы
-            atwebUrl search_result = null;
-            if(!page.getUrlOnPageList().isEmpty()) for(atwebUrl existingChildUrl : page.getUrlOnPageList()) {
-                if(existingChildUrl.urlStarting.equals(ele_href)) search_result = existingChildUrl;
-            }
-
-            // добавляем на страницу урл, если его там нет
-            if(search_result == null) {page.addUrlOnPage(global_search_result); }
+            urlFindOrCreate(page, ele_href);
+            if(domain_found) {
+                //System.out.println("!!! - found replaceable domain: \n" + ele_href + "\n" + domain_replaced);
+                urlFindOrCreate(page, domain_replaced); }
         }
 
         // страница загружена и ссылки получены, значит done!
         page.setDone(true);
 
         return page;
+    }
+
+
+
+    protected atwebUrl urlFindOrCreate(atwebPage page, String url) {
+        // поиск урла в глобальном списке урлов
+        atwebUrl global_search_result = null;
+        if(!this.urlList.isEmpty()) for(atwebUrl existingChildUrl : this.urlList) {
+            if(existingChildUrl.urlStarting.equals(url)) global_search_result = existingChildUrl;
+        }
+
+        // если урла нет, то создаём объект, добавляем в глобальный список урлов
+        if(global_search_result == null) {
+            global_search_result = new atwebUrl(url);
+            this.urlList.add(global_search_result);
+        }
+
+        // поиск урла в списке урлов страницы
+        atwebUrl search_result = null;
+        if(!page.getUrlOnPageList().isEmpty()) for(atwebUrl existingChildUrl : page.getUrlOnPageList()) {
+            if(existingChildUrl.urlStarting.equals(url)) search_result = existingChildUrl;
+        }
+
+        // добавляем на страницу урл, если его там нет
+        if(search_result == null) {page.addUrlOnPage(global_search_result); }
+
+        return global_search_result;
     }
 
 
@@ -255,4 +305,87 @@ public class testUrlJumper extends moduleDefault {
         return resultPage;
     }
 
+
+
+    //TODO Переместить в отдельный модель "report"
+
+
+
+    protected boolean createRawDataFile(String fileName) throws Exception {
+        File file = new File(fileName);
+        boolean result = false;
+
+        if(file.exists()) {
+            if (file.isFile()) {
+                if(file.delete()) {
+                    result = file.createNewFile();
+                } else {
+                    System.out.print("Can't create new file " + fileName);
+                }
+            } else {
+                System.out.print("Can't create new file " + fileName + ": directory located on this path");
+                result = false;
+            }
+        } else {
+            result = file.createNewFile();
+        }
+
+        return result;
+    }
+
+
+
+    protected void putRawDataInFile(String fileName, List<String> text) throws Exception {
+        FileWriter writer = new FileWriter(fileName,true);
+        for(String txt : text) {
+            writer.write(txt);
+        }
+        writer.close();
+    }
+
+
+
+    protected void makeRawReport(String fileName) { // отчет в файл
+
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        for(atwebSite site : this.siteList) {
+            pageToRawReport(fileName, site.root);
+        }
+
+    }
+
+
+
+    protected void pageToRawReport(String fileName, atwebPage page) { // отчет в файл
+
+        if(!page.getUrlToPageList().isEmpty()){
+            List<String> StrList = new ArrayList<String>();
+
+            StrList.add("p;" + page.getFullAddress() + ";" + page.clientTime + "\n");
+
+            for (atwebUrl pageurl : page.getUrlOnPageList()) {
+                StrList.add("u;" + pageurl.urlStarting + ";" + pageurl.urlDestination + ";"
+                        + pageurl.numRedirects + ";" + pageurl.httpResponseCode + ";" + pageurl.httpFirstResponseCode + ";"
+                        + pageurl.serverTimeAll + ";" + pageurl.serverTimeDst + ";"
+                        + pageurl.contentType + "\n");
+            }
+
+            try {
+                this.putRawDataInFile(fileName, StrList);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            StrList.clear();
+        }
+
+        if(!page.getChildList().isEmpty()) for(atwebPage pagechild : page.getChildList()) {
+            pageToRawReport(fileName, pagechild);
+        }
+    }
 }

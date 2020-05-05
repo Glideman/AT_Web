@@ -35,7 +35,7 @@ public class moduleDefault implements atwebInterface.Module {
 
     @Override
     public void Init(atwebInterface webInterface) {
-        this.webInterface = webInterface;
+        /*this.webInterface = webInterface;
 
         // get class methods, save them in hash map
         Method[] m_list = moduleTest.class.getDeclaredMethods();
@@ -54,7 +54,7 @@ public class moduleDefault implements atwebInterface.Module {
             }
         }
 
-        System.out.print("\n\n");
+        System.out.print("\n\n");*/
     }
 
 

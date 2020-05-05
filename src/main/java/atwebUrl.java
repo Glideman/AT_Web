@@ -1,5 +1,6 @@
 import javax.net.ssl.SSLException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 
@@ -19,6 +20,7 @@ public class atwebUrl {
     protected HttpURLConnection connection; // текущее соединение
 
     protected String contentType; // тип контента
+    protected String comment;
 
 
     atwebUrl(String url) {
@@ -32,6 +34,7 @@ public class atwebUrl {
         this.serverTimeDst = 0;
         this.connection = null;
         this.contentType = "";
+        this.comment = "";
     }
 
 
@@ -58,11 +61,28 @@ public class atwebUrl {
                 this.httpResponseCode = this.connection.getResponseCode();
             } catch (UnknownHostException e) {
                 this.httpResponseCode = -2;
-            } catch (SSLException e) {
+                this.comment = "UnknownHostException";
+                System.out.println("\nException caught when connecting to [" + urlCurrent + "] with response [" + this.httpResponseCode + "]; StackTrace:");
+                e.printStackTrace();
+            } catch (MalformedURLException e) {
                 this.httpResponseCode = -3;
+                this.comment = "MalformedURLException";
+                System.out.println("\nException caught when connecting to [" + urlCurrent + "] with response [" + this.httpResponseCode + "]; StackTrace:");
+                e.printStackTrace();
+            } catch (SSLException e) {
+                this.httpResponseCode = -4;
+                this.comment = "SSLException";
+                System.out.println("\nException caught when connecting to [" + urlCurrent + "] with response [" + this.httpResponseCode + "]; StackTrace:");
+                e.printStackTrace();
             } catch (Exception e) {
                 this.httpResponseCode = -5;
+                this.comment = "Exception";
+                System.out.println("\nException caught when connecting to [" + urlCurrent + "] with response [" + this.httpResponseCode + "]; StackTrace:");
                 e.printStackTrace();
+            } finally {
+                this.urlDestination = this.urlStarting;
+                this.contentType = "";
+                redirect = false;
             }
             this.serverTimeDst = System.currentTimeMillis() - connectionTimeDstStart;
 
@@ -73,7 +93,8 @@ public class atwebUrl {
             if (this.httpResponseCode != HttpURLConnection.HTTP_OK) {
                 if (    this.httpResponseCode == HttpURLConnection.HTTP_SEE_OTHER ||
                         this.httpResponseCode == HttpURLConnection.HTTP_MOVED_PERM ||
-                        this.httpResponseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                        this.httpResponseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
+                        this.httpResponseCode == 307) {
                     redirect = true;
                     this.numRedirects++;
                     urlCurrent = this.connection.getHeaderField("Location");
@@ -86,9 +107,10 @@ public class atwebUrl {
 
         this.serverTimeAll = System.currentTimeMillis() - connectionTimeStart;
 
-        this.contentType = this.connection.getContentType();
-
-        if(disconnect) this.connection.disconnect();
+        if(this.connection != null) {
+            this.contentType = this.connection.getContentType();
+            if(disconnect)  this.connection.disconnect();
+        }
 
         this.urlDestination = urlCurrent;
 
