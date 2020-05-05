@@ -5,7 +5,8 @@ import java.net.URL;
 import java.net.UnknownHostException;
 
 public class atwebUrl {
-    protected atwebPage page; // страницы, доступная по этому урлу
+    protected atwebPage destinationPage; // страница, доступная по этому урлу
+    protected atwebPage page; // страница, на которой находится данный урл
 
     protected String urlStarting; // изначальный адрес, который был представлен на странице
     protected String urlDestination; // конечный адрес после всех редиректов
@@ -24,6 +25,7 @@ public class atwebUrl {
 
 
     atwebUrl(String url) {
+        this.destinationPage = null;
         this.page = null;
         this.urlStarting = url;
         this.urlDestination = "";

@@ -81,6 +81,7 @@ public class testUrlJumper extends moduleDefault {
                 atwebPage page = this.goTo(this.urlList.get(i_url));
 
                 if(page != null) {
+                    // TODO Это нужно вынести в pageFindOrCreate
                     boolean foundSite = false;
                     for(atwebSite site : this.siteList) {
                         if(site.name.equals(page.site.name)) foundSite = true;
@@ -122,7 +123,7 @@ public class testUrlJumper extends moduleDefault {
         }
 
         atwebPage page = this.pageFindOrCreate(url.urlDestination);
-        url.page = page;
+        url.destinationPage = page;
 
         {// поиск урла в списке урлов, ведущих на эту страницу страницы
             atwebUrl search_result = null;

@@ -33,6 +33,7 @@ public class atwebMain {
         atwebMain.currentInterface.RegisterModule(new moduleMail());
         atwebMain.currentInterface.RegisterModule(new moduleFile());
         atwebMain.currentInterface.RegisterModule(new moduleForm());
+        atwebMain.currentInterface.RegisterModule(new moduleReport());
 
 
         // ext modules for testing

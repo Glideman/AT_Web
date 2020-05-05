@@ -224,6 +224,10 @@ public class atwebPage {
             System.out.println(" |- " + url.urlStarting + " (" + url.httpFirstResponseCode + ")");
         }
 
+        for( atwebUrl url : this.getUrlToPageList()) {
+            System.out.println(" -| " + url.page.getFullAddress() + " link " + url.urlStarting + " (" + url.httpFirstResponseCode + ")");
+        }
+
         for( atwebPage child : this.childList) {
             child.dump();
         }
