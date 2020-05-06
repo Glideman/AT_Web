@@ -79,10 +79,9 @@ public class moduleReport extends moduleDefault {
         int counter = 0;
 
         for(atwebUrl url : urlList) {
-            counter++;
-
             if( url.urlDestination.startsWith(siteName) &&
                     url.httpResponseCode != 200 ) {
+                counter++;
                 StrList.add(counter + ";" + url.httpResponseCode + ";" + url.urlDestination + "\n");
             }
         }
@@ -112,22 +111,31 @@ public class moduleReport extends moduleDefault {
         int counter = 0;
 
         for(atwebUrl url : urlList) {
-            counter++;
-
             if( url.httpResponseCode == 404 ) {
-                StrList.add("№;Code;Page;URL\n");
 
-                if(url.destinationPage != null) {
+                //TODO костылище для автодора
+
+                if(
+                        url.urlStarting.equals("http://avtodor-tr.gva.dev.one-touch.ru/account") ||
+                        url.urlStarting.equals("http://avtodor-tr.gva.dev.one-touch.ru/account/") ||
+                        url.urlStarting.equals("http://avtodor-tr.gva.dev.one-touch.ru/account/feedback") ||
+                        url.urlStarting.equals("http://avtodor-tr.gva.dev.one-touch.ru/account/feedback/")
+                ) continue;
+
+
+                //if(url.destinationPage != null) {
                     for(atwebUrl urlTo : url.destinationPage.getUrlToPageList()) {
-                        if(urlTo.page != null) {
+                        counter++;
+                        //if(urlTo.page != null) {
                             StrList.add(counter + ";" + urlTo.httpResponseCode + ";" + urlTo.page.getFullAddress() + ";" + urlTo.urlStarting + "\n");
-                        } else {
+                        /*} else {
                             StrList.add(counter + ";" + url.httpResponseCode + ";-;" + url.urlDestination + "\n");
-                        }
+                        }*/
                     }
-                } else {
-                    StrList.add(counter + ";" + url.httpResponseCode + ";-;" + url.urlDestination + "\n");
-                }
+                //} else {
+                //    counter++;
+                //    StrList.add(counter + ";" + url.httpResponseCode + ";-;" + url.urlDestination + "\n");
+                //}
 
             }
         }
