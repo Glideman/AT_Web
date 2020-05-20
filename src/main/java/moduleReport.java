@@ -10,6 +10,7 @@ import java.util.Scanner;
 public class moduleReport extends moduleDefault {
 
     protected List<atwebSite> siteList;
+    protected List<atwebPage> pageList;
     protected List<atwebUrl> urlList;
 
     @Override
@@ -40,6 +41,7 @@ public class moduleReport extends moduleDefault {
     moduleReport() {
         this.name = "report";
         this.siteList = new ArrayList<>();
+        this.pageList = new ArrayList<>();
         this.urlList = new ArrayList<>();
     }
 
@@ -47,18 +49,22 @@ public class moduleReport extends moduleDefault {
     public boolean Run() {
 
         try {
-            readRawReport("atr.txt");
+            readRawReport("target/raw.report.txt");
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        reportPagesOnSite("pages.csv", "http://avtodor-tr.gva.dev.one-touch.ru");
-        report404("404.csv");
+        reportPagesOnSite_2("bibicall.csv");
+        reportNon200("bibicall-error.csv");
+        //reportPagesOnSite("pages.csv", "http://avtodor-tr.gva.dev.one-touch.ru");
+        //report404("404.csv");
+        //report404_2("upd.csv");
+        //reportAllPages("allp.csv");
 
-        /*System.out.println("\n\n\nsites dump:");
+        System.out.println("\n\n\nsites dump:");
         for(atwebSite site : this.siteList) {
             site.dump();
-        }*/
+        }
 
         return false;
     }
@@ -96,6 +102,76 @@ public class moduleReport extends moduleDefault {
     }
 
 
+    protected void reportPagesOnSite_2(String fileName) { // отчет в файл
+
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        List<String> StrList = new ArrayList<String>();
+        StrList.add("№;Code;URL\n");
+        int counter = 0;
+
+        for(atwebUrl url : urlList) {
+            counter++;
+            StrList.add(counter + ";" + url.httpResponseCode + ";" + url.urlDestination + "\n");
+        }
+
+        try {
+            this.putRawDataInFile(fileName, StrList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        StrList.clear();
+    }
+
+
+    protected void reportNon200(String fileName) { // отчет в файл
+
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        List<String> StrList = new ArrayList<String>();
+        StrList.add("№;Code;Page;URL\n");
+        int counter = 0;
+
+        for(atwebUrl url : urlList) {
+            if( url.httpResponseCode != 200 ) {
+
+                //if(url.destinationPage != null) {
+                for(atwebUrl urlTo : url.destinationPage.getUrlToPageList()) {
+                    counter++;
+                    //if(urlTo.page != null) {
+                    StrList.add(counter + ";" + urlTo.httpResponseCode + ";" + urlTo.page.getFullAddress() + ";" + urlTo.urlStarting + "\n");
+                        /*} else {
+                            StrList.add(counter + ";" + url.httpResponseCode + ";-;" + url.urlDestination + "\n");
+                        }*/
+                }
+                //} else {
+                //    counter++;
+                //    StrList.add(counter + ";" + url.httpResponseCode + ";-;" + url.urlDestination + "\n");
+                //}
+
+            }
+        }
+
+        try {
+            this.putRawDataInFile(fileName, StrList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        StrList.clear();
+    }
+
 
     protected void report404(String fileName) { // отчет в файл
 
@@ -115,12 +191,12 @@ public class moduleReport extends moduleDefault {
 
                 //TODO костылище для автодора
 
-                if(
+                /*if(
                         url.urlStarting.equals("http://avtodor-tr.gva.dev.one-touch.ru/account") ||
                         url.urlStarting.equals("http://avtodor-tr.gva.dev.one-touch.ru/account/") ||
                         url.urlStarting.equals("http://avtodor-tr.gva.dev.one-touch.ru/account/feedback") ||
                         url.urlStarting.equals("http://avtodor-tr.gva.dev.one-touch.ru/account/feedback/")
-                ) continue;
+                ) continue;*/
 
 
                 //if(url.destinationPage != null) {
@@ -137,6 +213,87 @@ public class moduleReport extends moduleDefault {
                 //    StrList.add(counter + ";" + url.httpResponseCode + ";-;" + url.urlDestination + "\n");
                 //}
 
+            }
+        }
+
+        try {
+            this.putRawDataInFile(fileName, StrList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        StrList.clear();
+    }
+
+
+    protected void report404_2(String fileName) { // отчет в файл
+
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        List<String> StrList = new ArrayList<String>();
+        StrList.add("№;Code;Page;URL\n");
+        int counter = 0;
+
+        for(atwebUrl url : urlList) {
+            if( /*url.urlDestination.startsWith("http://avtodor-tr.gva.dev.one-touch.ru") &&*/
+                    url.httpResponseCode == 404 ) {
+
+                //TODO костылище для автодора
+
+                if(
+                        url.urlStarting.startsWith("http://avtodor-tr.gva.dev.one-touch.ru/account") ||
+                        url.urlDestination.startsWith("https://zakupki.gov.ru/")
+                ) continue;
+
+
+                //if(url.destinationPage != null) {
+                for(atwebUrl urlTo : url.destinationPage.getUrlToPageList()) {
+                    counter++;
+                    //if(urlTo.page != null) {
+                    StrList.add(counter + ";" + urlTo.httpResponseCode + ";" + urlTo.page.getFullAddress() + ";" + urlTo.urlStarting + "\n");
+                        /*} else {
+                            StrList.add(counter + ";" + url.httpResponseCode + ";-;" + url.urlDestination + "\n");
+                        }*/
+                }
+                //} else {
+                //    counter++;
+                //    StrList.add(counter + ";" + url.httpResponseCode + ";-;" + url.urlDestination + "\n");
+                //}
+
+            }
+        }
+
+        try {
+            this.putRawDataInFile(fileName, StrList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        StrList.clear();
+    }
+
+
+    protected void reportAllPages(String fileName) {
+
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        List<String> StrList = new ArrayList<String>();
+        StrList.add("№;Code;Page\n");
+        int counter = 0;
+
+        for(atwebPage page : this.pageList) {
+            if( page.site.name.equals("avtodor-tr.gva.dev.one-touch.ru") && !page.getUrlToPageList().isEmpty()) {
+                counter++;
+                StrList.add(counter + ";" + page.getUrlToPageList().get(0).httpResponseCode + ";" + page.getFullAddress() + "\n");
             }
         }
 
@@ -253,6 +410,7 @@ public class moduleReport extends moduleDefault {
 
                 currentPage = this.pageFindOrCreate(pageAddress);
                 currentPage.clientTime = pageClientTime;
+                this.pageList.add(currentPage);
             }
 
             else if(splitLine[0].equals("u")) {

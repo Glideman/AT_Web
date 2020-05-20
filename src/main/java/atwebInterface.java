@@ -19,6 +19,8 @@ public class atwebInterface {
     private ChromeDriver driver;
     private Properties props;
     private atwebUrl CurrentPage;
+    public long connectionLast;
+    public long connectionDelay;
 
 
     interface Module {
@@ -54,6 +56,9 @@ public class atwebInterface {
         this.props.setProperty("home_page","");
         this.props.setProperty("protocol","");
         this.props.setProperty("max_redirects","24");
+        this.connectionLast = System.currentTimeMillis();
+        this.connectionDelay = 1000;
+
     }
 
 

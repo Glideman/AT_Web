@@ -213,7 +213,7 @@ public class atwebPage {
 
 
     void dump() {
-        System.out.print("\n" + this.getFullAddress());
+        System.out.print("\n" + this.getFullAddress() + " to:" + this.getUrlToPageList().size() + " on:" + this.getUrlOnPageList().size() + " child:" + this.getChildList().size());
 
         if(this.getUrlToPageList().isEmpty())
             System.out.println("  url = none");

@@ -3,6 +3,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class atwebUrl {
     protected atwebPage destinationPage; // страница, доступная по этому урлу
@@ -56,9 +60,35 @@ public class atwebUrl {
             // Коннект
             redirect = false;
 
+            if(atwebMain.currentInterface.GetProp("connection_delay").equals("true")) {
+                long currentTime = System.currentTimeMillis();
+                long timeDelta = (atwebMain.currentInterface.connectionLast + atwebMain.currentInterface.connectionDelay) - currentTime;
+                if(timeDelta > 0) {
+                    try {
+                        Thread.sleep(timeDelta);
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+
             long connectionTimeDstStart = System.currentTimeMillis();
             try {
                 this.connection = (HttpURLConnection) new URL(urlCurrent).openConnection();
+
+                /*{
+                    Map<String, List<String>> connectionProps = this.connection.getRequestProperties();
+                    Set<String> propsKeys = connectionProps.keySet();
+                    for (String pk : propsKeys) {
+                        List<String> propList = connectionProps.get(pk);
+                        System.out.println("\n" + pk + " = ");
+                        System.out.println("(" + propList.size() + ")");
+                        for (String pl : propList) {
+                            System.out.println("[" + pl + "]");
+                        }
+                    }
+                }*/
+
                 this.connection.setRequestMethod("HEAD");
                 this.httpResponseCode = this.connection.getResponseCode();
             } catch (UnknownHostException e) {
@@ -87,6 +117,7 @@ public class atwebUrl {
                 redirect = false;
             }
             this.serverTimeDst = System.currentTimeMillis() - connectionTimeDstStart;
+            atwebMain.currentInterface.connectionLast = System.currentTimeMillis();
 
             // Код ответа при переходе по первой ссылке
             if (this.httpFirstResponseCode == 0) this.httpFirstResponseCode = this.httpResponseCode;
