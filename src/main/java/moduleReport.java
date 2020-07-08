@@ -54,21 +54,181 @@ public class moduleReport extends moduleDefault {
             e.printStackTrace();
         }
 
-        reportPagesOnSite_2("bibicall.csv");
-        reportNon200("bibicall-error.csv");
+        reportHTML("rep.html");
+        //reportPagesOnSite_2("travel.csv");
+        //reportDocumentsWithLinks("bl-docs-links.csv");
+        //reportDocuments("bl-docs.csv");
+        //reportNon200("pagano-error.csv");
+        //reportAllLinksToSitesExcept("pagano-sites.csv", "www.pagano.ru");
+        //reportAllLinksRedirects("pagano-redirects.csv");
         //reportPagesOnSite("pages.csv", "http://avtodor-tr.gva.dev.one-touch.ru");
         //report404("404.csv");
         //report404_2("upd.csv");
-        //reportAllPages("allp.csv");
+        //reportAllPages("travel.csv");
 
-        System.out.println("\n\n\nsites dump:");
+        /*System.out.println("\n\n\nsites dump:");
         for(atwebSite site : this.siteList) {
             site.dump();
-        }
+        }*/
 
         return false;
     }
 
+
+    protected void reportHTML(String fileName) { // отчет в файл
+
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        List<String> StrList = new ArrayList<String>();
+
+        // Страница - начало
+        StrList.add("" +
+                "<!DOCTYPE html>\n" +
+                "<html lang=\"en\">\n" +
+                "    <head>\n" +
+                "        <meta charset=\"UTF-8\">\n" +
+                "        <title>(site name) report</title>\n" +
+                "        <!-- стили отображения отчета -->\n" +
+                "        <style type=\"text/css\">\n" +
+                "        </style>\n" +
+                "    </head>\n" +
+                "    <body>\n" +
+                "        <section>\n" +
+                "            <h1>Отчет о проверке сайтов.</h1>\n" +
+                "            <p>Список сайтов:</p>\n" +
+                "            <ul>\n" +
+                "                <li>(site name 1)</li>\n" +
+                "                <li>(site name 2)</li>\n" +
+                "            </ul>\n" +
+                "            <hr>\n" +
+                "            <p>Сортировка</p>\n" +
+                "            <form>\n" +
+                "                <select>\n" +
+                "                    <option>Пункт 1</option>\n" +
+                "                    <option>Пункт 2</option>\n" +
+                "                </select>\n" +
+                "                <input type=\"submit\" value=\"Sort\">\n" +
+                "                <input type=\"reset\" value=\"Reset\">\n" +
+                "                <input type=\"button\" value=\"Export\">\n" +
+                "                <select>\n" +
+                "                    <option>.csv</option>\n" +
+                "                </select>\n" +
+                "            </form>\n" +
+                "            <hr>\n" +
+                "            <div class=\"js-result-container\">\n" +
+                "                Result\n" +
+                "            </div>\n" +
+                "        </section>\n" +
+                "        <!-- скрипты (фильтр и тп). функциональная часть -->\n" +
+                "        <script type=\"text/javascript\">\n"+
+                "            let dataRaw = [\n");
+
+        for(atwebSite site : siteList) {
+            StrList.add("[\"" + site.protocol + "\",\"" + site.name + "\",");
+
+            addPageToHTML(site.root, StrList);
+
+            StrList.add("],");
+        }
+
+        // Классы JS
+        StrList.add("" +
+                "            ];\n" +
+                "            class atwebSite {\n" +
+                "                constructor() {\n" +
+                "                    this.protocol = \"\";\n" +
+                "                    this.name = \"\";\n" +
+                "                    this.root = new atwebPage();\n" +
+                "                    this.root.site = this;\n" +
+                "                    this.pageList = new Array();\n" +
+                "                }\n" +
+                "            }\n" +
+                "            class atwebPage {\n" +
+                "                constructor() {\n" +
+                "                    this.alias = \"\";\n" +
+                "                    this.comment = \"\";\n" +
+                "                    this.clientTime = 0;\n" +
+                "                    this.responseOnly = true;\n" +
+                "                    this.done = false;\n" +
+                "                    this.getParameter = false;\n" +
+                "                    this.anchor = false;\n" +
+                "                    this.formList = new Array();\n" +
+                "                    this.urlOnPageList = new Array();\n" +
+                "                    this.urlToPageList = new Array();\n" +
+                "                    this.childList = new Array();\n" +
+                "                    this.parent = null;\n" +
+                "                    this.site = null;\n" +
+                "                }\n" +
+                "            }\n" +
+                "            class atwebUrl {\n" +
+                "                constructor(url) {\n" +
+                "                    this.destinationPage = null;\n" +
+                "                    this.page = null;\n" +
+                "                    this.urlStarting = url;\n" +
+                "                    this.urlDestination = \"\";\n" +
+                "                    this.numRedirects = 0;\n" +
+                "                    this.httpResponseCode = 0;\n" +
+                "                    this.httpFirstResponseCode = 0;\n" +
+                "                    this.serverTimeAll = 0;\n" +
+                "                    this.serverTimeDst = 0;\n" +
+                "                    this.connection = null;\n" +
+                "                    this.contentType = \"\";\n" +
+                "                    this.comment = \"\";\n" +
+                "                }\n" +
+                "            }\n" +
+                "        </script>\n" +
+                "    </body>\n" +
+                "</html>\n");
+
+        try {
+            this.putRawDataInFile(fileName, StrList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        StrList.clear();
+    }
+
+
+    protected void addPageToHTML(atwebPage page, List<String> text) {
+        if(page != null) {
+
+            // Данные сайта
+            String line = "[\"" +
+                    page.alias + "\",\"" +
+                    page.comment + "\"," +
+                    page.clientTime + "," +
+                    page.getParameter + "," +
+                    page.anchor + ",[";
+            text.add(line);
+
+            // список урлов
+            for(atwebUrl url : page.getUrlOnPageList()) {
+                line = "[\"" +
+                        url.urlStarting + "\",\"" +
+                        url.urlDestination + "\"," +
+                        url.numRedirects + "," +
+                        url.httpResponseCode + "," +
+                        url.httpFirstResponseCode + "," +
+                        url.serverTimeAll + "," +
+                        url.serverTimeDst + ",\"" +
+                        url.contentType + "\",\"" +
+                        url.comment + "\"],";
+                text.add(line);
+            }
+
+            // дети
+            text.add("],[");
+            for(atwebPage child : page.getChildList()) {
+                addPageToHTML(child,text);
+            }
+            text.add("]],\n");
+        }
+    }
 
 
     protected void reportPagesOnSite(String fileName, String siteName) { // отчет в файл
@@ -110,14 +270,70 @@ public class moduleReport extends moduleDefault {
             e.printStackTrace();
         }
 
+        List<String> StrList = new ArrayList<String>();
+        StrList.add("URL\n");
+        Integer counter = 0;
+
+        for(atwebSite site : this.siteList) {
+            addPageListToStr(site.root,StrList);
+        }
+
+        /*for(atwebUrl url : urlList) {
+            if(url.page != null)
+            if(!url.page.getUrlToPageList().isEmpty()) {
+                counter++;
+                StrList.add(counter + ";" + url.httpResponseCode + ";" + url.urlDestination + "\n");
+            }
+        }*/
+
+        try {
+            this.putRawDataInFile(fileName, StrList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        StrList.clear();
+    }
+
+
+    protected void addPageListToStr(atwebPage page, List<String> text) {
+        if(page != null) {
+            if( !page.getUrlToPageList().isEmpty() &&
+                !page.getParameter &&
+                !page.anchor ) {
+                String line = page.getFullAddress() + "\n";
+                System.out.print(line);
+                text.add(line);
+            }
+
+            for(atwebPage child : page.getChildList()) {
+                addPageListToStr(child,text);
+            }
+        }
+    }
+
+
+    protected void reportAllLinksToSitesExcept(String fileName, String site) { // отчет в файл
+
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
         List<String> StrList = new ArrayList<String>();
-        StrList.add("№;Code;URL\n");
+        StrList.add("№;Code;Page;URL;Type\n");
         int counter = 0;
 
         for(atwebUrl url : urlList) {
-            counter++;
-            StrList.add(counter + ";" + url.httpResponseCode + ";" + url.urlDestination + "\n");
+            ///System.out.println(" -- " + url.urlStarting + " : " + url.page.site.name);
+            if( !url.destinationPage.site.name.equals(site) ) {
+                for(atwebUrl urlTo : url.destinationPage.getUrlToPageList()) {
+                    counter++;
+                    StrList.add(counter + ";" + urlTo.httpResponseCode + ";" + urlTo.page.getFullAddress() + ";" + urlTo.urlStarting + ";" + urlTo.contentType + "\n");
+                }
+            }
         }
 
         try {
@@ -127,6 +343,170 @@ public class moduleReport extends moduleDefault {
         }
 
         StrList.clear();
+    }
+
+
+    protected void reportDocuments(String fileName) { // отчет в файл
+
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        List<String> StrList = new ArrayList<String>();
+        StrList.add("№;URL;Type\n");
+        int counter = 0;
+
+
+        for(atwebSite site : this.siteList) {
+            addDocListToStr(site.root,StrList);
+        }
+
+
+        /*for(atwebUrl url : urlList) {
+            if( !url.contentType.equals("text/html") && !url.contentType.equals("null") ) {
+                for(atwebUrl urlTo : url.destinationPage.getUrlToPageList()) {
+                    counter++;
+                    StrList.add(counter + ";" + urlTo.urlStarting + ";" + urlTo.contentType + "\n");
+                }
+            }
+        }*/
+
+        try {
+            this.putRawDataInFile(fileName, StrList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        StrList.clear();
+    }
+
+
+    protected void addDocListToStr(atwebPage page, List<String> text) {
+        if(page != null) {
+            if( !page.getUrlToPageList().isEmpty() &&
+                    !page.getParameter &&
+                    !page.anchor ) {
+
+                atwebUrl url = page.getUrlToPageList().get(0);
+
+                if(!url.contentType.equals("text/html") && !url.contentType.equals("null")) {
+                    //for(atwebUrl urlTo : url.destinationPage.getUrlToPageList()) {
+                        //counter++;
+                        //StrList.add(counter + ";" + urlTo.page.getFullAddress() + ";" + urlTo.urlStarting + ";" + urlTo.contentType + "\n");
+                        String line = (text.size()) + ";" + url.urlStarting + ";" + url.contentType + "\n";
+                        System.out.print(line);
+                        text.add(line);
+                    //}
+                }
+
+
+            }
+
+            for(atwebPage child : page.getChildList()) {
+                addDocListToStr(child,text);
+            }
+        }
+    }
+
+
+    protected void reportDocumentsWithLinks(String fileName) { // отчет в файл
+
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        List<String> StrList = new ArrayList<String>();
+        StrList.add("№;Page;URL;Type\n");
+        int counter = 0;
+
+
+        for(atwebSite site : this.siteList) {
+            addDocListToStrWithLinks(site.root,StrList);
+        }
+
+        /*for(atwebUrl url : urlList) {
+            if( !url.contentType.equals("text/html") && !url.contentType.equals("null") ) {
+                for(atwebUrl urlTo : url.destinationPage.getUrlToPageList()) {
+                    counter++;
+                    StrList.add(counter + ";" + urlTo.page.getFullAddress() + ";" + urlTo.urlStarting + ";" + urlTo.contentType + "\n");
+                }
+            }
+        }*/
+
+        try {
+            this.putRawDataInFile(fileName, StrList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        StrList.clear();
+    }
+
+
+    protected void addDocListToStrWithLinks(atwebPage page, List<String> text) {
+        if(page != null) {
+            if( !page.getUrlToPageList().isEmpty() &&
+                    !page.getParameter &&
+                    !page.anchor ) {
+
+                atwebUrl url = page.getUrlToPageList().get(0);
+
+                if(!url.contentType.equals("text/html") && !url.contentType.equals("null")) {
+                    for(atwebUrl urlTo : url.destinationPage.getUrlToPageList()) {
+                        //counter++;
+                        //StrList.add(counter + ";" + urlTo.page.getFullAddress() + ";" + urlTo.urlStarting + ";" + urlTo.contentType + "\n");
+                        String line = (text.size()) + ";" + urlTo.page.getFullAddress() + ";" + urlTo.urlStarting + ";" + urlTo.contentType + "\n";
+                        System.out.print(line);
+                        text.add(line);
+                    }
+                }
+
+
+            }
+
+            for(atwebPage child : page.getChildList()) {
+                addDocListToStrWithLinks(child,text);
+            }
+        }
+    }
+
+
+
+    protected void reportAllLinksRedirects(String fileName) { // отчет в файл
+/*
+        try {
+            this.createRawDataFile(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        List<String> StrList = new ArrayList<String>();
+        StrList.add("№;Code;Page;URL;Destination;Chain length\n");
+        int counter = 0;
+
+        for(atwebUrl url : urlList) {
+            if( url.httpFirstResponseCode >= 300 && url.httpFirstResponseCode < 400 ) {
+                for(atwebUrl urlTo : url.destinationPage.getUrlToPageList()) {
+                    counter++;
+                    StrList.add(counter + ";" + urlTo.httpFirstResponseCode + ";" + urlTo.page.getFullAddress() + ";" + urlTo.urlStarting + ";" + urlTo.urlDestination + ";" + urlTo.numRedirects + "\n");
+                }
+            }
+        }
+
+        try {
+            this.putRawDataInFile(fileName, StrList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        StrList.clear();*/
     }
 
 
@@ -352,16 +732,19 @@ public class moduleReport extends moduleDefault {
 
         atwebSite currentSite = null;
         for(atwebSite site : this.siteList)
-            if(site.getAddress().equals(siteAddress))
+            if(site.name.equals(secondSplit[0]))
                 currentSite = site;
 
         if(currentSite == null) {
+            //System.out.println("NEW SITE " + siteAddress + " : " + secondSplit[0]);
             currentSite = new atwebSite();
             currentSite.setAddress(siteAddress);
+            //System.out.println("btw " + currentSite + " : " + currentSite.name);
             this.siteList.add(currentSite);
         }
 
         atwebPage resultPage = currentSite.root;
+
 
         if(siteAddress.equals(normAddress))
             currentSite.pageList.add(currentSite.root);
@@ -369,6 +752,7 @@ public class moduleReport extends moduleDefault {
         if(secondSplit.length > 1)
             resultPage = currentSite.pageFindOrCreate(secondSplit[1]);
 
+        //System.out.println("btw2 " + resultPage + " : " + resultPage.site.name);
         return resultPage;
     }
 
@@ -424,6 +808,7 @@ public class moduleReport extends moduleDefault {
                 currentUrl.contentType = splitLine[8];
                 currentUrl.page = currentPage;
                 currentUrl.destinationPage = pageFindOrCreate(currentUrl.urlDestination);
+                //System.out.println("AAAAAA2 " + currentUrl.destinationPage.site.name);
                 currentUrl.destinationPage.addUrlToPage(currentUrl);
 
                 // поиск урла в списке урлов страницы
@@ -446,6 +831,7 @@ public class moduleReport extends moduleDefault {
                 // если урла нет, то создаём объект, добавляем в глобальный список урлов
                 if(global_search_result == null) {
                     this.urlList.add(currentUrl);
+                    //System.out.println("Added url " + currentUrl.urlStarting + " : " + currentUrl.page.site + " : " + currentUrl.page.site.name);
                 }
             }
 

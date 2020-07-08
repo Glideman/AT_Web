@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>(site name) report</title>
+
+        <!-- стили отображения отчета -->
+        <style type="text/css">
+
+        </style>
+    </head>
+
+    <body>
+        <section>
+            <h1>Отчет о проверке сайтов.</h1>
+            <p>Список сайтов:</p>
+            <ul>
+                <li>(site name 1)</li>
+                <li>(site name 2)</li>
+            </ul>
+            <hr>
+            <p>Сортировка</p>
+            <form>
+                <select>
+                    <option>Пункт 1</option>
+                    <option>Пункт 2</option>
+                </select>
+                <input type="submit" value="Sort">
+                <input type="reset" value="Reset">
+                <input type="button" value="Export">
+                <select>
+                    <option>.csv</option>
+                </select>
+            </form>
+            <hr>
+            <div class="js-result-container">
+                Result
+            </div>
+        </section>
+
+        <!-- скрипты (фильтр и тп). функциональная часть -->
+        <script type="text/javascript">
+
+let dataRaw = [
+];
+
+            class atwebSite {
+                constructor() {
+                    this.protocol = "";
+                    this.name = "";
+
+                    this.root = new atwebPage();
+                    this.root.site = this;
+                    this.pageList = new Array();
+                }
+            }
+
+
+            class atwebPage {
+                constructor() {
+                    this.alias = "";
+                    this.comment = "";
+
+                    this.clientTime = 0;
+
+                    this.responseOnly = true;
+                    this.done = false;
+                    this.getParameter = false;
+                    this.anchor = false;
+
+                    this.formList = new Array();
+                    this.urlOnPageList = new Array();
+                    this.urlToPageList = new Array();
+                    this.childList = new Array();
+                    this.parent = null;
+                    this.site = null;
+                }
+            }
+
+
+            class atwebUrl {
+                constructor(url) {
+                    this.destinationPage = null;
+                    this.page = null;
+                    this.urlStarting = url;
+                    this.urlDestination = "";
+                    this.numRedirects = 0;
+                    this.httpResponseCode = 0;
+                    this.httpFirstResponseCode = 0;
+                    this.serverTimeAll = 0;
+                    this.serverTimeDst = 0;
+                    this.connection = null;
+                    this.contentType = "";
+                    this.comment = "";
+                }
+            }
+
+
+
+
+
+            window.onload = function() {
+                console.log(dataRaw);
+                processRawData(dataRaw,
+            };
+
+
+        </script>
+    </body>
+</html>
