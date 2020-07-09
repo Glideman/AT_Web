@@ -125,7 +125,7 @@ public class moduleReport extends moduleDefault {
                 "        </section>\n" +
                 "        <!-- скрипты (фильтр и тп). функциональная часть -->\n" +
                 "        <script type=\"text/javascript\">\n"+
-                "            let dataRaw = [\n");
+                "let dataRaw = [\n");
 
         for(atwebSite site : siteList) {
             StrList.add("[\"" + site.protocol + "\",\"" + site.name + "\",");
@@ -136,8 +136,7 @@ public class moduleReport extends moduleDefault {
         }
 
         // Классы JS
-        StrList.add("" +
-                "            ];\n" +
+        StrList.add("];\n" +
                 "            class atwebSite {\n" +
                 "                constructor() {\n" +
                 "                    this.protocol = \"\";\n" +
@@ -226,7 +225,7 @@ public class moduleReport extends moduleDefault {
             for(atwebPage child : page.getChildList()) {
                 addPageToHTML(child,text);
             }
-            text.add("]],\n");
+            text.add("]],");
         }
     }
 
