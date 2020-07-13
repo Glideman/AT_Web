@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>atweb report</title>
+		<title></title>
 
 		<!-- стили отображения отчета -->
 		<style type="text/css">
@@ -25,23 +25,21 @@
 				min-width:125px;
 				max-width:215px;
 			}
+			.hscroll {
+				overflow-x:scroll;
+			}
 		</style>
 	</head>
 
 	<body>
 		<section>
-			<h1>Отчет о проверке сайтов.</h1>
-			<p>Список сайтов:</p>
-			<ul>
-				<li>(site name 1)</li>
-				<li>(site name 2)</li>
-			</ul>
+			<h1>Отчет о проверке сайта </h1>
 			<hr>
 			<p>Фильтр</p>
 			<form name="frm">
 				<div class="filter-block">
 					<div>
-						<label><input type="checkbox" name="sites-cb" class="js-filter" checked>Сайты</label><br>
+						Сайты<br>
 						<span>Скрыть:</span><br>
 						<select multiple size="5" name="filter-sites" class="js-filter">
 						</select>
@@ -66,30 +64,31 @@
 						<label>От <input type="text" name="client-time-a" placeholder="500ms" class="js-filter"></label> <br>
 						<label>До <input type="text" name="client-time-b" placeholder="500ms" class="js-filter"></label>
 					</div>
+					<div>
+						<label><input type="checkbox" name="redirect-cb" class="js-filter" checked>Показывать редиректы</label><br>
+					</div>
 				</div>
-				Результатов: <span>0</span>
-				<input type="button" value="Sort">
-				<input type="button" value="Show">
-				<input type="reset" value="Reset">
+				Результатов: <span id="result-counter">0</span>
+				<input type="button" value="Сбросить" onclick="this.form.reset(); submitFilter();">
 				<br>
-				Экспорт таблицы в формате
+				Сохранить таблицу в формате
 				<select>
 					<option>.csv</option>
 				</select>
-				<input type="button" value="Экспорт">
+				<a href="#" id="save-btn" download="report.csv" onclick="makeExportStr();">Сохранить</a>
 				<br>
 				Ограничить кол-во строк
-				<select>
-					<option>не ограничить</option>
+				<select name="max-lines" class="js-filter">
 					<option>32</option>
 					<option>128</option>
 					<option>512</option>
 					<option>2048</option>
+					<option>не ограничить</option>
 				</select>
 				(не влияет на экспорт)
 			</form>
 			<hr>
-			<div class="js-result-container">
+			<div id="result-container" class="hscroll">
 				Result
 			</div>
 		</section>
@@ -168,7 +167,8 @@ let dataRaw = [["https","pascal-med.ru",["https://pascal-med.ru","",9781,false,f
 			let siteList = new Array();
 			let pageList = new Array();
 			let urlList = new Array();
-			let table = null;
+			let resultData = new Array();
+			let exportStr = "";
 
 			// ищет в списке сайтов сайт, создаёт новый, если не был найден. возвращает atwebSite
 			function getSiteByAddress(address) {
@@ -396,6 +396,18 @@ let dataRaw = [["https","pascal-med.ru",["https://pascal-med.ru","",9781,false,f
 				return true;}
 
 
+			function getSelectValues(select) {
+				let result = [];
+
+				for(let opt of select.options) {
+					if(opt.selected)
+						result.push(opt.value || opt.text);
+				}
+
+				return result;
+			}
+
+
 			function updateFilter() {
 				let typeList = new Array();
 				let codeList = new Array();
@@ -409,7 +421,11 @@ let dataRaw = [["https","pascal-med.ru",["https://pascal-med.ru","",9781,false,f
 					searchResult = null;
 					for(let urlCode of codeList) {
 						if(urlCode === url.httpResponseCode) searchResult = urlCode;}
-					if(searchResult == null) codeList.push(url.httpResponseCode);
+
+					searchResult = null;
+					for(let urlCode of codeList) {
+						if(urlCode === url.httpFirstResponseCode) searchResult = urlCode;}
+					if(searchResult == null) codeList.push(url.httpFirstResponseCode);
 				}
 
 				let siteSelect = document.forms['frm']['filter-sites'];
@@ -434,13 +450,151 @@ let dataRaw = [["https","pascal-med.ru",["https://pascal-med.ru","",9781,false,f
 				return true;}
 
 
-			function submitFilter() {
-				console.log(document.forms['frm']);
+			function makeExportStr() {
+				exportStr = "data:text/csv;base64,";
+				let encStr = "";
+				let saveLink = document.getElementById("save-btn");
+				let counter = 0;
+
+				for(let resultRow of resultData) {
+					if(counter == 0) encStr += "Num";
+					else encStr += counter;
+
+					for(let resultCell of resultRow) {
+						encStr += ";\"" + resultCell + "\"";
+					}
+
+					encStr += "\n";
+					counter ++;
+				}
+
+				exportStr += window.btoa(encStr);
+				//window.location = exportStr;
+
+				saveLink.setAttribute("href",exportStr);
 			}
 
 
-			function makeTable() {
+			function submitFilter() {
+				// disable
+				//let filterElements = document.getElementsByClassName("js-filter");
+				//for(let filterElement of filterElements) {filterElement.disabled = true;}
 
+				let counter = 0;
+				let resultCounterEle = document.getElementById("result-counter");
+				let hideSites = getSelectValues(document.forms['frm']['filter-sites']);
+				let hideTypes = getSelectValues(document.forms['frm']['filter-types']);
+				let hideCodes = getSelectValues(document.forms['frm']['filter-codes']);
+				let timeServerA = document.forms['frm']['server-time-a'];
+				let timeServerB = document.forms['frm']['server-time-b'];
+				let timeClientA = document.forms['frm']['client-time-a'];
+				let timeClientB = document.forms['frm']['client-time-b'];
+				let showTypes = document.forms['frm']['types-cb'];
+				let showCodes = document.forms['frm']['codes-cb'];
+				let showServerTime = document.forms['frm']['server-time-cb'];
+				let showClientTime = document.forms['frm']['client-time-cb'];
+				let showRedirect = document.forms['frm']['redirect-cb'];
+
+				for(let resultRow of resultData) {
+					while(resultRow.length > 0) resultRow.pop();}
+				while(resultData.length > 0) resultData.pop();
+
+				for(let url of urlList) {
+					let blocked = false;
+
+					for(let hs of hideSites) if(url.destinationPage !== null && url.destinationPage.site.name === hs) blocked = true;
+					for(let ht of hideTypes) if(url.contentType == ht) blocked = true;
+					for(let hc of hideCodes) if(url.httpResponseCode == hc) blocked = true;
+
+					if(timeServerA.value != "") if(url.serverTimeAll < timeServerA.value*1) blocked = true;
+					if(timeServerB.value != "") if(url.serverTimeAll > timeServerB.value*1) blocked = true;
+					if(timeClientA.value != "") if(url.destinationPage.clientTime < timeClientA.value*1) blocked = true;
+					if(timeClientB.value != "") if(url.destinationPage.clientTime > timeClientB.value*1) blocked = true;
+
+					if(blocked == true) continue;
+
+					let row = [];
+
+					if(counter == 0) {
+						row.push("Link");
+						if(showCodes.checked) row.push("Response");
+						if(showRedirect.checked) {
+							row.push("Redirects");
+							row.push("Destination");
+							if(showCodes.checked) row.push("Response");
+							if(showServerTime.checked) row.push("Response time with redirects");
+						}
+						if(showServerTime.checked) row.push("Response time");
+						if(showClientTime.checked) row.push("Load time");
+						if(showTypes.checked) row.push("Content type");
+					} else {
+						row.push(url.urlStarting);
+						if(showCodes.checked) row.push(url.httpFirstResponseCode);
+						if(showRedirect.checked) {
+							row.push(url.numRedirects);
+							row.push(url.urlDestination);
+							if(showCodes.checked) row.push(url.httpResponseCode);
+							if(showServerTime.checked) row.push(url.serverTimeAll);
+						}
+						if(showServerTime.checked) row.push(url.serverTimeDst);
+						if(showClientTime.checked) row.push(url.destinationPage.clientTime);
+						if(showTypes.checked) row.push(url.contentType);
+					}
+
+					resultData.push(row);
+// progress calc
+					counter ++;
+				}
+
+				resultCounterEle.innerText = resultData.length;
+				//makeExportStr();
+				makeTable();
+				// enable
+				//filterElements = document.getElementsByClassName("js-filter");
+				//for(let filterElement of filterElements) {filterElement.disabled = false;}
+				return true;}
+
+
+			function makeTable() {
+				let counter = 0;
+
+				let maxLines = getSelectValues(document.forms['frm']['max-lines'])[0];
+				if(maxLines === "не ограничить") maxLines = 0;
+				console.log(maxLines);
+
+				let tableElement = document.createElement("table");
+				tableElement.setAttribute("border","1px");
+				tableElement.setAttribute("bordercolor","#cacaca");
+				tableElement.setAttribute("frame","border");
+				tableElement.setAttribute("rules","all");
+				tableElement.setAttribute("cellpadding","5px");
+
+				for(let resultRow of resultData) {
+					let rowEle = document.createElement("tr");
+
+					let tagName = "";
+					if(counter == 0) {tagName = "th";}
+					else {tagName = "td";}
+
+					let numEle = document.createElement(tagName);
+					if(counter == 0) numEle.innerText = "Num";
+					else numEle.innerText = counter;
+					rowEle.appendChild(numEle);
+
+					for(let resultCell of resultRow) {
+						let cellEle = document.createElement(tagName);
+						cellEle.innerText = resultCell;
+						rowEle.appendChild(cellEle);
+					}
+
+					tableElement.appendChild(rowEle);
+					counter ++;
+					if(maxLines > 0 && counter > maxLines) break;
+				}
+
+				let resultTableContainer = document.getElementById("result-container");
+				resultTableContainer.innerText = "";
+				resultTableContainer.appendChild(tableElement);
 				return true;}
 
 
@@ -452,6 +606,7 @@ let dataRaw = [["https","pascal-med.ru",["https://pascal-med.ru","",9781,false,f
 				for(let filterElement of filterElements) {filterElement.onchange = submitFilter;}
 
 				updateFilter();
+				submitFilter();
 				makeTable();
 			};
 

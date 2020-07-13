@@ -225,9 +225,14 @@ public class moduleReport extends moduleDefault {
             for(atwebPage child : page.getChildList()) {
                 addPageToHTML(child,text);
             }
-            text.add("]],");
+            text.add("]],\n");
         }
     }
+
+
+
+
+
 
 
     protected void reportPagesOnSite(String fileName, String siteName) { // отчет в файл
