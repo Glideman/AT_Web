@@ -58,14 +58,15 @@
 					</div>
 					<div>
 						<label><input type="checkbox" name="server-time-cb" class="js-filter" checked>Время ответа</label><br>
-						<label>От <input type="text" name="server-time-a" placeholder="500ms" class="js-filter"></label> <br>
-						<label>До <input type="text" name="server-time-b" placeholder="500ms" class="js-filter"></label> <br>
+						<label>От <input type="text" name="server-time-a" placeholder="500" class="js-filter"></label> <br>
+						<label>До <input type="text" name="server-time-b" placeholder="500" class="js-filter"></label> <br>
 						<label><input type="checkbox" name="client-time-cb" class="js-filter" checked>Время загрузки</label><br>
-						<label>От <input type="text" name="client-time-a" placeholder="500ms" class="js-filter"></label> <br>
-						<label>До <input type="text" name="client-time-b" placeholder="500ms" class="js-filter"></label>
+						<label>От <input type="text" name="client-time-a" placeholder="500" class="js-filter"></label> <br>
+						<label>До <input type="text" name="client-time-b" placeholder="500" class="js-filter"></label>
 					</div>
 					<div>
 						<label><input type="checkbox" name="redirect-cb" class="js-filter" checked>Показывать редиректы</label><br>
+						<label><input type="checkbox" name="pages-cb" class="js-filter">Вывод страниц, на которых находятся ссылки<br>(может занять много времени, если проект большой)</label><br>
 					</div>
 				</div>
 				Результатов: <span id="result-counter">0</span>
@@ -494,12 +495,15 @@ let dataRaw = [["https","pascal-med.ru",["https://pascal-med.ru","",9781,false,f
 				let showServerTime = document.forms['frm']['server-time-cb'];
 				let showClientTime = document.forms['frm']['client-time-cb'];
 				let showRedirect = document.forms['frm']['redirect-cb'];
+				let showPages = document.forms['frm']['pages-cb'];
 
 				for(let resultRow of resultData) {
 					while(resultRow.length > 0) resultRow.pop();}
 				while(resultData.length > 0) resultData.pop();
 
-				for(let url of urlList) {
+				if(showPages.checked)
+				for(let page of pageList)
+				for(let url of page.urlOnPageList) {
 					let blocked = false;
 
 					for(let hs of hideSites) if(url.destinationPage !== null && url.destinationPage.site.name === hs) blocked = true;
@@ -513,40 +517,91 @@ let dataRaw = [["https","pascal-med.ru",["https://pascal-med.ru","",9781,false,f
 
 					if(blocked == true) continue;
 
-					let row = [];
 
 					if(counter == 0) {
-						row.push("Link");
-						if(showCodes.checked) row.push("Response");
+						let titleRow = [];
+						titleRow.push("Link");
+						if(showCodes.checked) titleRow.push("Response");
 						if(showRedirect.checked) {
-							row.push("Redirects");
-							row.push("Destination");
-							if(showCodes.checked) row.push("Response");
-							if(showServerTime.checked) row.push("Response time with redirects");
+							titleRow.push("Redirects");
+							titleRow.push("Destination");
+							if(showCodes.checked) titleRow.push("Response");
+							if(showServerTime.checked) titleRow.push("Response time with redirects");
 						}
-						if(showServerTime.checked) row.push("Response time");
-						if(showClientTime.checked) row.push("Load time");
-						if(showTypes.checked) row.push("Content type");
-					} else {
-						row.push(url.urlStarting);
-						if(showCodes.checked) row.push(url.httpFirstResponseCode);
-						if(showRedirect.checked) {
-							row.push(url.numRedirects);
-							row.push(url.urlDestination);
-							if(showCodes.checked) row.push(url.httpResponseCode);
-							if(showServerTime.checked) row.push(url.serverTimeAll);
-						}
-						if(showServerTime.checked) row.push(url.serverTimeDst);
-						if(showClientTime.checked) row.push(url.destinationPage.clientTime);
-						if(showTypes.checked) row.push(url.contentType);
+						if(showServerTime.checked) titleRow.push("Response time");
+						if(showClientTime.checked) titleRow.push("Load time");
+						if(showTypes.checked) titleRow.push("Content type");
+						titleRow.push("Page");
+						resultData.push(titleRow);
+
 					}
+
+					let row = [];
+					row.push(url.urlStarting);
+					if(showCodes.checked) row.push(url.httpFirstResponseCode);
+					if(showRedirect.checked) {
+						row.push(url.numRedirects);
+						row.push(url.urlDestination);
+						if(showCodes.checked) row.push(url.httpResponseCode);
+						if(showServerTime.checked) row.push(url.serverTimeAll);
+					}
+					if(showServerTime.checked) row.push(url.serverTimeDst);
+					if(showClientTime.checked) row.push(url.destinationPage.clientTime);
+					if(showTypes.checked) row.push(url.contentType);
+					row.push(page.getFullAddress());
+
+					resultData.push(row);
+// progress calc
+					counter ++;
+				} else for(let url of urlList) {
+					let blocked = false;
+
+					for(let hs of hideSites) if(url.destinationPage !== null && url.destinationPage.site.name === hs) blocked = true;
+					for(let ht of hideTypes) if(url.contentType == ht) blocked = true;
+					for(let hc of hideCodes) if(url.httpResponseCode == hc) blocked = true;
+
+					if(timeServerA.value != "") if(url.serverTimeAll < timeServerA.value*1) blocked = true;
+					if(timeServerB.value != "") if(url.serverTimeAll > timeServerB.value*1) blocked = true;
+					if(timeClientA.value != "") if(url.destinationPage.clientTime < timeClientA.value*1) blocked = true;
+					if(timeClientB.value != "") if(url.destinationPage.clientTime > timeClientB.value*1) blocked = true;
+
+					if(blocked == true) continue;
+
+					if(counter == 0) {
+						let titleRow = [];
+						titleRow.push("Link");
+						if(showCodes.checked) titleRow.push("Response");
+						if(showRedirect.checked) {
+							titleRow.push("Redirects");
+							titleRow.push("Destination");
+							if(showCodes.checked) titleRow.push("Response");
+							if(showServerTime.checked) titleRow.push("Response time with redirects");
+						}
+						if(showServerTime.checked) titleRow.push("Response time");
+						if(showClientTime.checked) titleRow.push("Load time");
+						if(showTypes.checked) titleRow.push("Content type");
+						resultData.push(titleRow);
+					}
+
+					let row = [];
+					row.push(url.urlStarting);
+					if(showCodes.checked) row.push(url.httpFirstResponseCode);
+					if(showRedirect.checked) {
+						row.push(url.numRedirects);
+						row.push(url.urlDestination);
+						if(showCodes.checked) row.push(url.httpResponseCode);
+						if(showServerTime.checked) row.push(url.serverTimeAll);
+					}
+					if(showServerTime.checked) row.push(url.serverTimeDst);
+					if(showClientTime.checked) row.push(url.destinationPage.clientTime);
+					if(showTypes.checked) row.push(url.contentType);
 
 					resultData.push(row);
 // progress calc
 					counter ++;
 				}
 
-				resultCounterEle.innerText = resultData.length;
+				resultCounterEle.innerText = (resultData.length-1);
 				//makeExportStr();
 				makeTable();
 				// enable
@@ -560,7 +615,7 @@ let dataRaw = [["https","pascal-med.ru",["https://pascal-med.ru","",9781,false,f
 
 				let maxLines = getSelectValues(document.forms['frm']['max-lines'])[0];
 				if(maxLines === "не ограничить") maxLines = 0;
-				console.log(maxLines);
+				//console.log(maxLines);
 
 				let tableElement = document.createElement("table");
 				tableElement.setAttribute("border","1px");

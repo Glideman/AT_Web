@@ -481,6 +481,7 @@ public class testUrlJumper extends moduleDefault {
                 "\t\t\t\t\t</div>\n" +
                 "\t\t\t\t\t<div>\n" +
                 "\t\t\t\t\t\t<label><input type=\"checkbox\" name=\"redirect-cb\" class=\"js-filter\" checked>Показывать редиректы</label><br>\n" +
+                "\t\t\t\t\t\t<label><input type=\"checkbox\" name=\"pages-cb\" class=\"js-filter\">Вывод страниц, на которых находятся ссылки<br>(может занять много времени, если проект большой)</label><br>\n" +
                 "\t\t\t\t\t</div>\n" +
                 "\t\t\t\t</div>\n" +
                 "\t\t\t\tРезультатов: <span id=\"result-counter\">0</span>\n" +
@@ -525,7 +526,6 @@ public class testUrlJumper extends moduleDefault {
 
         // Классы JS
         StrList.add("\n];\n" +
-                "\n" +
                 "\t\t\tclass atwebSite {\n" +
                 "\t\t\t\tconstructor() {\n" +
                 "\t\t\t\t\tthis.protocol = \"\";\n" +
@@ -922,12 +922,15 @@ public class testUrlJumper extends moduleDefault {
                 "\t\t\t\tlet showServerTime = document.forms['frm']['server-time-cb'];\n" +
                 "\t\t\t\tlet showClientTime = document.forms['frm']['client-time-cb'];\n" +
                 "\t\t\t\tlet showRedirect = document.forms['frm']['redirect-cb'];\n" +
+                "\t\t\t\tlet showPages = document.forms['frm']['pages-cb'];\n" +
                 "\n" +
                 "\t\t\t\tfor(let resultRow of resultData) {\n" +
                 "\t\t\t\t\twhile(resultRow.length > 0) resultRow.pop();}\n" +
                 "\t\t\t\twhile(resultData.length > 0) resultData.pop();\n" +
                 "\n" +
-                "\t\t\t\tfor(let url of urlList) {\n" +
+                "\t\t\t\tif(showPages.checked)\n" +
+                "\t\t\t\tfor(let page of pageList)\n" +
+                "\t\t\t\tfor(let url of page.urlOnPageList) {\n" +
                 "\t\t\t\t\tlet blocked = false;\n" +
                 "\n" +
                 "\t\t\t\t\tfor(let hs of hideSites) if(url.destinationPage !== null && url.destinationPage.site.name === hs) blocked = true;\n" +
@@ -941,40 +944,91 @@ public class testUrlJumper extends moduleDefault {
                 "\n" +
                 "\t\t\t\t\tif(blocked == true) continue;\n" +
                 "\n" +
-                "\t\t\t\t\tlet row = [];\n" +
                 "\n" +
                 "\t\t\t\t\tif(counter == 0) {\n" +
-                "\t\t\t\t\t\trow.push(\"Link\");\n" +
-                "\t\t\t\t\t\tif(showCodes.checked) row.push(\"Response\");\n" +
+                "\t\t\t\t\t\tlet titleRow = [];\n" +
+                "\t\t\t\t\t\ttitleRow.push(\"Link\");\n" +
+                "\t\t\t\t\t\tif(showCodes.checked) titleRow.push(\"Response\");\n" +
                 "\t\t\t\t\t\tif(showRedirect.checked) {\n" +
-                "\t\t\t\t\t\t\trow.push(\"Redirects\");\n" +
-                "\t\t\t\t\t\t\trow.push(\"Destination\");\n" +
-                "\t\t\t\t\t\t\tif(showCodes.checked) row.push(\"Response\");\n" +
-                "\t\t\t\t\t\t\tif(showServerTime.checked) row.push(\"Response time with redirects\");\n" +
+                "\t\t\t\t\t\t\ttitleRow.push(\"Redirects\");\n" +
+                "\t\t\t\t\t\t\ttitleRow.push(\"Destination\");\n" +
+                "\t\t\t\t\t\t\tif(showCodes.checked) titleRow.push(\"Response\");\n" +
+                "\t\t\t\t\t\t\tif(showServerTime.checked) titleRow.push(\"Response time with redirects\");\n" +
                 "\t\t\t\t\t\t}\n" +
-                "\t\t\t\t\t\tif(showServerTime.checked) row.push(\"Response time\");\n" +
-                "\t\t\t\t\t\tif(showClientTime.checked) row.push(\"Load time\");\n" +
-                "\t\t\t\t\t\tif(showTypes.checked) row.push(\"Content type\");\n" +
-                "\t\t\t\t\t} else {\n" +
-                "\t\t\t\t\t\trow.push(url.urlStarting);\n" +
-                "\t\t\t\t\t\tif(showCodes.checked) row.push(url.httpFirstResponseCode);\n" +
-                "\t\t\t\t\t\tif(showRedirect.checked) {\n" +
-                "\t\t\t\t\t\t\trow.push(url.numRedirects);\n" +
-                "\t\t\t\t\t\t\trow.push(url.urlDestination);\n" +
-                "\t\t\t\t\t\t\tif(showCodes.checked) row.push(url.httpResponseCode);\n" +
-                "\t\t\t\t\t\t\tif(showServerTime.checked) row.push(url.serverTimeAll);\n" +
-                "\t\t\t\t\t\t}\n" +
-                "\t\t\t\t\t\tif(showServerTime.checked) row.push(url.serverTimeDst);\n" +
-                "\t\t\t\t\t\tif(showClientTime.checked) row.push(url.destinationPage.clientTime);\n" +
-                "\t\t\t\t\t\tif(showTypes.checked) row.push(url.contentType);\n" +
+                "\t\t\t\t\t\tif(showServerTime.checked) titleRow.push(\"Response time\");\n" +
+                "\t\t\t\t\t\tif(showClientTime.checked) titleRow.push(\"Load time\");\n" +
+                "\t\t\t\t\t\tif(showTypes.checked) titleRow.push(\"Content type\");\n" +
+                "\t\t\t\t\t\ttitleRow.push(\"Page\");\n" +
+                "\t\t\t\t\t\tresultData.push(titleRow);\n" +
+                "\n" +
                 "\t\t\t\t\t}\n" +
+                "\n" +
+                "\t\t\t\t\tlet row = [];\n" +
+                "\t\t\t\t\trow.push(url.urlStarting);\n" +
+                "\t\t\t\t\tif(showCodes.checked) row.push(url.httpFirstResponseCode);\n" +
+                "\t\t\t\t\tif(showRedirect.checked) {\n" +
+                "\t\t\t\t\t\trow.push(url.numRedirects);\n" +
+                "\t\t\t\t\t\trow.push(url.urlDestination);\n" +
+                "\t\t\t\t\t\tif(showCodes.checked) row.push(url.httpResponseCode);\n" +
+                "\t\t\t\t\t\tif(showServerTime.checked) row.push(url.serverTimeAll);\n" +
+                "\t\t\t\t\t}\n" +
+                "\t\t\t\t\tif(showServerTime.checked) row.push(url.serverTimeDst);\n" +
+                "\t\t\t\t\tif(showClientTime.checked) row.push(url.destinationPage.clientTime);\n" +
+                "\t\t\t\t\tif(showTypes.checked) row.push(url.contentType);\n" +
+                "\t\t\t\t\trow.push(page.getFullAddress());\n" +
+                "\n" +
+                "\t\t\t\t\tresultData.push(row);\n" +
+                "// progress calc\n" +
+                "\t\t\t\t\tcounter ++;\n" +
+                "\t\t\t\t} else for(let url of urlList) {\n" +
+                "\t\t\t\t\tlet blocked = false;\n" +
+                "\n" +
+                "\t\t\t\t\tfor(let hs of hideSites) if(url.destinationPage !== null && url.destinationPage.site.name === hs) blocked = true;\n" +
+                "\t\t\t\t\tfor(let ht of hideTypes) if(url.contentType == ht) blocked = true;\n" +
+                "\t\t\t\t\tfor(let hc of hideCodes) if(url.httpResponseCode == hc) blocked = true;\n" +
+                "\n" +
+                "\t\t\t\t\tif(timeServerA.value != \"\") if(url.serverTimeAll < timeServerA.value*1) blocked = true;\n" +
+                "\t\t\t\t\tif(timeServerB.value != \"\") if(url.serverTimeAll > timeServerB.value*1) blocked = true;\n" +
+                "\t\t\t\t\tif(timeClientA.value != \"\") if(url.destinationPage.clientTime < timeClientA.value*1) blocked = true;\n" +
+                "\t\t\t\t\tif(timeClientB.value != \"\") if(url.destinationPage.clientTime > timeClientB.value*1) blocked = true;\n" +
+                "\n" +
+                "\t\t\t\t\tif(blocked == true) continue;\n" +
+                "\n" +
+                "\t\t\t\t\tif(counter == 0) {\n" +
+                "\t\t\t\t\t\tlet titleRow = [];\n" +
+                "\t\t\t\t\t\ttitleRow.push(\"Link\");\n" +
+                "\t\t\t\t\t\tif(showCodes.checked) titleRow.push(\"Response\");\n" +
+                "\t\t\t\t\t\tif(showRedirect.checked) {\n" +
+                "\t\t\t\t\t\t\ttitleRow.push(\"Redirects\");\n" +
+                "\t\t\t\t\t\t\ttitleRow.push(\"Destination\");\n" +
+                "\t\t\t\t\t\t\tif(showCodes.checked) titleRow.push(\"Response\");\n" +
+                "\t\t\t\t\t\t\tif(showServerTime.checked) titleRow.push(\"Response time with redirects\");\n" +
+                "\t\t\t\t\t\t}\n" +
+                "\t\t\t\t\t\tif(showServerTime.checked) titleRow.push(\"Response time\");\n" +
+                "\t\t\t\t\t\tif(showClientTime.checked) titleRow.push(\"Load time\");\n" +
+                "\t\t\t\t\t\tif(showTypes.checked) titleRow.push(\"Content type\");\n" +
+                "\t\t\t\t\t\tresultData.push(titleRow);\n" +
+                "\t\t\t\t\t}\n" +
+                "\n" +
+                "\t\t\t\t\tlet row = [];\n" +
+                "\t\t\t\t\trow.push(url.urlStarting);\n" +
+                "\t\t\t\t\tif(showCodes.checked) row.push(url.httpFirstResponseCode);\n" +
+                "\t\t\t\t\tif(showRedirect.checked) {\n" +
+                "\t\t\t\t\t\trow.push(url.numRedirects);\n" +
+                "\t\t\t\t\t\trow.push(url.urlDestination);\n" +
+                "\t\t\t\t\t\tif(showCodes.checked) row.push(url.httpResponseCode);\n" +
+                "\t\t\t\t\t\tif(showServerTime.checked) row.push(url.serverTimeAll);\n" +
+                "\t\t\t\t\t}\n" +
+                "\t\t\t\t\tif(showServerTime.checked) row.push(url.serverTimeDst);\n" +
+                "\t\t\t\t\tif(showClientTime.checked) row.push(url.destinationPage.clientTime);\n" +
+                "\t\t\t\t\tif(showTypes.checked) row.push(url.contentType);\n" +
                 "\n" +
                 "\t\t\t\t\tresultData.push(row);\n" +
                 "// progress calc\n" +
                 "\t\t\t\t\tcounter ++;\n" +
                 "\t\t\t\t}\n" +
                 "\n" +
-                "\t\t\t\tresultCounterEle.innerText = resultData.length;\n" +
+                "\t\t\t\tresultCounterEle.innerText = (resultData.length-1);\n" +
                 "\t\t\t\t//makeExportStr();\n" +
                 "\t\t\t\tmakeTable();\n" +
                 "\t\t\t\t// enable\n" +
@@ -988,6 +1042,7 @@ public class testUrlJumper extends moduleDefault {
                 "\n" +
                 "\t\t\t\tlet maxLines = getSelectValues(document.forms['frm']['max-lines'])[0];\n" +
                 "\t\t\t\tif(maxLines === \"не ограничить\") maxLines = 0;\n" +
+                "\t\t\t\t//console.log(maxLines);\n" +
                 "\n" +
                 "\t\t\t\tlet tableElement = document.createElement(\"table\");\n" +
                 "\t\t\t\ttableElement.setAttribute(\"border\",\"1px\");\n" +
@@ -1026,6 +1081,7 @@ public class testUrlJumper extends moduleDefault {
                 "\n" +
                 "\n" +
                 "\t\t\twindow.onload = function() {\n" +
+                "\t\t\t\t//console.log(dataRaw);\n" +
                 "\t\t\t\tprocessRawData(dataRaw);\n" +
                 "\n" +
                 "\t\t\t\tlet filterElements = document.getElementsByClassName(\"js-filter\");\n" +
